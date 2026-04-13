@@ -1,11 +1,21 @@
-import React, { useState } from 'react'
-import { postData } from '../api/PostApi';
+import React, { useEffect, useState } from 'react'
+import { postData, updateData } from '../api/PostApi';
 
-const Form = ({ data, setData }) => {
+const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
     const [addData, setAddData] = useState({
         title: "",
         body: ""
     });
+
+    const isEmpty = Object.keys(updateDataApi).length === 0;
+
+    // get the updated data and add into input field
+    useEffect(() => {
+        updateDataApi && setAddData({
+            title: updateDataApi.title || "",
+            body: updateDataApi.body || "",
+        })
+    }, [updateDataApi])
 
     const handleInputChange = (e) => {
         const name = e.target.name;
@@ -29,10 +39,40 @@ const Form = ({ data, setData }) => {
         }
     }
 
+    // Updata post data
+    const updatePostData = async () => {
+        try {
+            const res = await updateData(updateDataApi.id, addData);
+            if (res.status === 200) {
+                setData((prev) => {
+                    console.log("Prev data", prev);
+                    return prev.map((curElem) => {
+                        return curElem.id === res.data.id ? res.data : curElem;
+                    })
+                });
+
+                setAddData({ title: "", body: "" });
+                setUpdateDataApi({});
+
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+
+    }
+
     //form submission 
     const handleFormSubmit = (e) => {
         e.preventDefault();
-        addPostData();
+
+        const action = e.nativeEvent.submitter.value;
+        console.log(action);
+        if (action === "ADD") {
+            addPostData();
+        } else if (action === "EDIT") {
+            updatePostData();
+        }
     }
 
 
@@ -41,7 +81,7 @@ const Form = ({ data, setData }) => {
             <form onSubmit={handleFormSubmit}>
                 <input type='text' name="title" onChange={handleInputChange} value={addData.title} placeholder='Title' className='w-full border border-gray-500 mb-3 py-2 px-4 text-gray-500' />
                 <textarea placeholder='Body' name="body" onChange={handleInputChange} value={addData.body} className='w-full border border-gray-500 mb-3 py-2 px-4 text-gray-500'></textarea>
-                <button type='submit' className='text-white py-2 px-5 bg-green-600 hover:bg-green-700 cursor-pointer rounded-xl'>ADD</button>
+                <button type='submit' value={isEmpty ? 'ADD' : 'EDIT'} className='text-white py-2 px-5 bg-green-600 hover:bg-green-700 cursor-pointer rounded-xl'>{isEmpty ? 'ADD' : 'EDIT'}</button>
             </form>
         </div>
     )
